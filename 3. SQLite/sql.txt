@@ -1,0 +1,20 @@
+1. С какими актёрами работал режиссер Jørgen Lerdam?
+SELECT * FROM actors WHERE Id in (SELECT actor_id FROM movie_actors WHERE movie_id=(SELECT id FROM movies WHERE director LIKE '%Jørgen Lerdam%'))
+
+2. Кто из сценаристов принял участие в большинстве фильмов?
+with writer_id as (select json_extract(b.value, "$.id") as id
+from (select * from movies where json_valid(writers) = 1) a, json_each(a.writers) b),
+
+cnt_movies as (select id, count(*) as cnt from writer_id group by id)
+
+select 
+m.cnt, w.name
+from cnt_movies m
+left join writers w on m.id = w.id
+order by cnt desc limit 1
+
+3. Кто из актёров снялся в большинстве фильмов?
+with movie_cnt as (select count(movie_id) as cnt, actor_id from movie_actors group by actor_id)
+select b.name, b.id, max(a.cnt) as cnt from movie_cnt a
+left join actors b on a.actor_id = b.id
+where b.name not like "%N/A%"
